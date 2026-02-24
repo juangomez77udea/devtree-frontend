@@ -1,89 +1,117 @@
-import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { social } from '../data/social';
-import DevTreeInput from '../components/DevTreeInput';
-import { isValidUrl } from '../utils';
-import { toast } from 'sonner';
-import { updateProfile } from '../api/DevTreeAPI';
-import type { User, DevtreeLink } from '../types';
-
+import { useEffect, useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { social } from "../data/social"
+import DevTreeInput from "../components/DevTreeInput"
+import { isValidUrl } from "../utils"
+import { toast } from "sonner"
+import { updateProfile } from "../api/DevTreeAPI"
+import type { SocialNetwork, User } from "../types"
 
 export default function LinkTreeView() {
-  const queryClient = useQueryClient();
-  const user: User | undefined = queryClient.getQueryData(['user']);
-  
-  const [devtreeLinks, setDevTreeLinks] = useState<DevtreeLink[]>(() => {
-    if (user?.links) {
-      try {
-        const savedLinks: DevtreeLink[] = JSON.parse(user.links);
-        if (savedLinks.length > 0) {
-          return social.map(item => {
-            const userlink = savedLinks.find(link => link.name === item.name);
-            return userlink ? { ...item, url: userlink.url, enabled: userlink.enabled } : item;
-          });
-        }
-      } catch (e) { console.error(e); }
-    }
-    return social;
-  });
+  const [devTreeLinks, setDevTreeLinks] = useState(social)
 
-  // Sincronizar cuando los datos de la caché cambien (ej. al cargar la página)
-  useEffect(() => {
-    if (user?.links) {
-      const savedLinks: DevtreeLink[] = JSON.parse(user.links);
-      const updatedData = social.map(item => {
-        const userlink = savedLinks.find(link => link.name === item.name);
-        return userlink ? { ...item, url: userlink.url, enabled: userlink.enabled } : item;
-      });
-      setDevTreeLinks(updatedData);
-    }
-  }, [user?.links]); 
+  const queryClient = useQueryClient()
+  const user: User = queryClient.getQueryData(['user'])!
 
   const { mutate } = useMutation({
     mutationFn: updateProfile,
-    onError: (error) => toast.error(error.message),
-    onSuccess: () => toast.success('Actualizado correctamente')
-  });
+    onError: (error) => {
+      toast.error(error.message)
+    },
+    onSuccess: () => {
+      toast.success('Actualizado Correctamente')
+    }
+  })
+
+  useEffect(() => {
+    const updatedData = devTreeLinks.map(item => {
+      const userlink = JSON.parse(user.links).find((link: SocialNetwork) => link.name === item.name)
+      if (userlink) {
+        return { ...item, url: userlink.url, enabled: userlink.enabled }
+      }
+      return item
+    })
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDevTreeLinks(updatedData)
+  }, [])
+
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const updatedLinks = devtreeLinks.map(link =>
-      link.name === e.target.name ? { ...link, url: e.target.value } : link
-    );
-    setDevTreeLinks(updatedLinks);
+    const updatedLinks = devTreeLinks.map(link => link.name === e.target.name ? { ...link, url: e.target.value } : link)
+    setDevTreeLinks(updatedLinks)
+  }
 
-    // Actualizamos caché para vista previa en tiempo real
-    queryClient.setQueryData(['user'], (prevData: User) => ({
-        ...prevData,
-        links: JSON.stringify(updatedLinks)
-    }));
-  };
+  const links: SocialNetwork[] = JSON.parse(user.links)
 
   const handleEnableLink = (socialNetwork: string) => {
-    const updatedLinks = devtreeLinks.map(link => {
+    const updatedLinks = devTreeLinks.map(link => {
       if (link.name === socialNetwork) {
         if (isValidUrl(link.url)) {
-          return { ...link, enabled: !link.enabled };
+          return { ...link, enabled: !link.enabled }
         } else {
-          toast.error('URL no válida');
+          toast.error('URL no Válida')
         }
       }
-      return link;
-    });
+      return link
+    })
 
-    setDevTreeLinks(updatedLinks);
+    setDevTreeLinks(updatedLinks)
 
-    // Actualizamos la caché para que el componente Devtree.tsx se entere del cambio
-    queryClient.setQueryData(['user'], (prevData: User) => ({
-      ...prevData,
-      links: JSON.stringify(updatedLinks)
-    }));
-  };
+    let updatedItems: SocialNetwork[] = []
+    const selectedSocialNetwork = updatedLinks.find(link => link.name === socialNetwork)
+    if (selectedSocialNetwork?.enabled) {
+      const id = links.filter(link => link.id).length + 1
+      if (links.some(link => link.name === socialNetwork)) {
+        updatedItems = links.map(link => {
+          if (link.name === socialNetwork) {
+            return {
+              ...link,
+              enabled: true,
+              id
+            }
+          } else {
+            return link
+          }
+        })
+      } else {
+        const newItem = {
+          ...selectedSocialNetwork,
+          id
+        }
+        updatedItems = [...links, newItem]
+      }
+    } else {
+      const indexToUpdate = links.findIndex(link => link.name === socialNetwork)
+      updatedItems = links.map(link => {
+        if (link.name === socialNetwork) {
+          return {
+            ...link,
+            id: 0,
+            enabled: false
+          }
+        } else if (link.id > indexToUpdate && (indexToUpdate !== 0 && link.id === 1)) {
+          return {
+            ...link,
+            id: link.id - 1
+          }
+        } else {
+          return link
+        }
+      })
+    }
 
-  const updatedUser = { ...user!, links: JSON.stringify(devtreeLinks) };
+    // Almacenar en la base de datos
+    queryClient.setQueryData(['user'], (prevData: User) => {
+      return {
+        ...prevData,
+        links: JSON.stringify(updatedItems)
+      }
+    })
+  }
 
   return (
-    <div className='space-y-5'>
-      {devtreeLinks.map(item => (
+    <div className="space-y-5">
+      {devTreeLinks.map(item => (
         <DevTreeInput
           key={item.name}
           item={item}
@@ -92,11 +120,9 @@ export default function LinkTreeView() {
         />
       ))}
       <button
-        className='bg-cyan-400 p-2 text-lg w-full uppercase text-slate-600 rounded font-bold'
-        onClick={() => mutate(updatedUser)}
-      >
-        Guardar cambios
-      </button>
+        className="bg-cyan-400 p-2 text-lg w-full uppercase text-slate-600 rounded-lg font-bold"
+        onClick={() => mutate(queryClient.getQueryData(['user'])!)}
+      >Guardar Cambios</button>
     </div>
-  );
+  )
 }
