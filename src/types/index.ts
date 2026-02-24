@@ -1,3 +1,4 @@
+
 export type User = {
       handle: string
       name: string
@@ -6,6 +7,7 @@ export type User = {
       _id: string
       description: string
       image: string
+      links: string
 }
 
 export type ResgisterForm = Pick<User, "handle" | "name" | "email"> & {
@@ -18,3 +20,12 @@ export type LoginForm = Pick<User, 'email'> & {
 }
 
 export type ProfileForm = Pick<User, "handle" | "description">
+
+export type SocialNetwork = {
+      id: number
+      name: string
+      url: string
+      enabled: boolean 
+}
+
+export type DevtreeLink = Pick<SocialNetwork, 'name' | 'url' | 'enabled'>
