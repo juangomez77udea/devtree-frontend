@@ -1,6 +1,7 @@
 import { isAxiosError} from "axios";
 import api from "../config/axios";
 import type {  User } from "../types";
+import { UserHandle } from '../types/index';
 
 
 export async function getUser() {      
@@ -11,6 +12,7 @@ export async function getUser() {
             if(isAxiosError(error) && error.response) {
                   throw new Error(error.response.data.error)
             }
+            throw error
       }
 }
 
@@ -22,6 +24,7 @@ export async function updateProfile(formData: User) {
             if(isAxiosError(error) && error.response) {
                   throw new Error(error.response.data.error)
             }
+            throw error
       }
 }
 
@@ -35,5 +38,19 @@ export async function uploadImage(file: File) {
             if(isAxiosError(error) && error.response) {
                   throw new Error(error.response.data.error)
             }
+            throw error
+      }
+}
+
+export async function getUserByHandle(handle: string) {
+      try {
+            const url = `/${handle}`
+            const { data } = await api<UserHandle>(url)
+            return data
+      } catch (error) {
+            if(isAxiosError(error) && error.response) {
+                  throw new Error(error.response.data.error || 'Error al obtener usuario')
+            }
+            throw new Error('Error al obtener usuario')
       }
 }
