@@ -1,12 +1,14 @@
 import { Link, Outlet } from "react-router-dom";
 import { Toaster } from "sonner";
-import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import NavigationTabs from "../components/NavigationTabs";
 import type { SocialNetwork, User } from "../types";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import DevtreeLink from "./DevtreeLink";
-import { QueryClient, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import Header from "./Header";
 
 type DevtreeProps = {
       data: User
@@ -15,12 +17,6 @@ type DevtreeProps = {
 export default function Devtree({ data }: DevtreeProps) {
 
       const [enabledLinks, setEnabledLinks] = useState<SocialNetwork[]>(JSON.parse(data.links).filter((item: SocialNetwork) => item.enabled))
-
-      useEffect(() => {
-            const links = JSON.parse(data.links);
-            setEnabledLinks(links.filter((item: SocialNetwork) => item.enabled));
-      }, [data.links])
-
 
       const QueryClient = useQueryClient()
 
@@ -47,21 +43,7 @@ export default function Devtree({ data }: DevtreeProps) {
 
       return (
             <>
-                  <header className="bg-slate-800 py-5">
-                        <div className="mx-auto max-w-5xl flex flex-col md:flex-row items-center md:justify-between">
-                              <div className="w-full p-5 lg:p-0 md:w-1/3">
-                                    <img src="/logo.svg" className="w-full block" />
-                              </div>
-                              <div className="md:w-1/3 md:flex md:justify-end">
-                                    <button
-                                          className=" bg-lime-500 p-2 text-slate-800 uppercase font-black text-xs rounded-lg cursor-pointer"
-                                          onClick={() => { }}
-                                    >
-                                          Cerrar Sesión
-                                    </button>
-                              </div>
-                        </div>
-                  </header>
+                  <Header/>
                   <div className="bg-gray-100  min-h-screen py-10">
                         <main className="mx-auto max-w-5xl p-10 md:p-0">
                               <NavigationTabs />
